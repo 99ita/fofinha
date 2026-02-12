@@ -137,6 +137,7 @@
     </style>
 </head>
 <body>
+    <audio id="bg-music" src="song.mp3" preload="auto" loop></audio>
 
     <div id="heart-container"></div>
 
@@ -251,6 +252,7 @@
                     updateSlideDisplay();
                     startTimer();
                 }, 600);
+                document.getElementById('bg-music').play().catch(e => console.log("Playback failed:", e));
             } else {
                 document.getElementById('error-msg').style.display = 'block';
             }
