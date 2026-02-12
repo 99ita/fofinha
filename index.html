@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amoooo-teeeeeee</title>
+    <style>
+        :root {
+            --primary-pink: #ff6b6b;
+            --dark-pink: #ee5253;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #f0f2f5; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; 
+            transition: background 1.5s ease;
+        }
+
+        body.valentine-theme {
+            background: linear-gradient(135deg, #ffafbd 0%, #ffc3a0 100%);
+            /*background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);*/
+        }
+
+        #main-stage {
+            position: relative;
+            width: 610px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 600px; 
+        }
+
+        #quiz-container, #slideshow-container, #letter-reveal {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 25px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: opacity 0.6s ease;
+            width: 100%;
+            box-sizing: border-box;
+            position: absolute; 
+        }
+
+        #slideshow-container, #letter-reveal {
+            display: none;
+            opacity: 0;
+            height: 720px;
+        }
+
+        /* --- LOVE METER --- */
+        #love-meter-container {
+            width: 250px;
+            height: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+            margin: 0 auto 20px auto;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+        #love-meter-fill {
+            width: 0%; height: 100%;
+            background: var(--primary-pink);
+            transition: width 0.6s ease;
+        }
+
+        /* --- SLIDESHOW --- */
+        .image-viewport {
+            width: 100%; height: 500px;
+            overflow: hidden; position: relative;
+            border-radius: 15px; background: #000;
+        }
+        .slide {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        .slide.active { opacity: 1; }
+
+        .nav-btn {
+            cursor: pointer; position: absolute; top: 50%; transform: translateY(-50%);
+            width: 40px; height: 40px; background: white; color: var(--primary-pink);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 20;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .prev { left: -20px; } .next { right: -20px; }
+        .hidden-nav { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* --- TIME COUNTER --- */
+        #time-counter {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--dark-pink);
+            font-weight: bold;
+        }
+
+        /* --- LETTER --- */
+        #letter-reveal {
+            text-align: left;
+        }
+
+        /* --- ANIMATIONS --- */
+        .cursor-heart { position: fixed; pointer-events: none; color: var(--primary-pink); animation: fallFade 1.2s forwards; }
+        @keyframes fallFade { 100% { transform: translateY(40px); opacity: 0; } }
+
+        .heart-bg { 
+            position: absolute; 
+            bottom: -10vh; /* Start off-screen */
+            left: var(--x-pos);
+            font-size: var(--size);
+            animation: floatAndFade var(--speed) linear infinite; 
+            animation-delay: var(--delay);
+            z-index: -1; 
+            pointer-events: none; 
+        }
+
+        @keyframes floatAndFade {
+            0% { 
+                transform: translateY(0) rotate(var(--rotation)); 
+                opacity: 0; 
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { 
+                transform: translateY(-120vh) rotate(var(--rotation)); 
+                opacity: 0; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="heart-container"></div>
+
+    <div id="main-stage">
+        <div id="quiz-container">
+            <h2 style="color: var(--dark-pink)">🔒 Acesso bloqueado 🔒</h2>
+            <p style="color: var(--dark-pink)">Responder a todas as perguntas para desbloquear</p>
+            <div id="questions-list"></div>
+            <button onclick="checkQuiz()" style="width:100%; padding:12px; border-radius:20px; border:none; background:var(--primary-pink); color:white; font-weight:bold; cursor:pointer;">🔓 Desbloquear 🔓</button>
+            <p id="error-msg" style="color:red; display:none; font-size:0.8rem; margin-top:10px;">Try again! 💔</p>
+        </div>
+
+        <div id="slideshow-container">
+            <h3 id="caption-text" style="color: var(--dark-pink); font-style: bold; margin-bottom: 10px;"></h3>
+            <div style="position:relative;">
+                <div class="image-viewport" id="slides-wrapper"></div>
+                <a class="nav-btn prev" id="prev-btn" onclick="changeSlide(-1)">&#10094;</a>
+                <a class="nav-btn next" id="next-btn" onclick="changeSlide(1)">&#10095;</a>
+            </div>
+            <div id="love-meter-container"><div id="love-meter-fill"></div></div>
+            <div id="time-counter">Together for: <span id="time-display"></span></div>
+            <button id="letter-btn" style="display:none; margin: 15px auto 0; padding:10px 20px; border-radius:20px; border:none; background:var(--primary-pink); color:white; font-weight:bold; cursor:pointer;" onclick="transitionToLetter()">Carta ultra secreta 💌</button>
+        </div>
+
+        <div id="letter-reveal">
+            <h2 style="color: var(--dark-pink); text-align: center;">Para a minha pessoa favorita 🌹</h2>
+            <p>Fofinha, amo-te desde aqui até à lua (e de volta), és a pessoa mais engraçada, carinhosa e gostosa que eu alguma vez conheci.</p>
+            <p>Amo que me faças sempre querer ser melhor por ti e por mim e quero crescer contigo até sermos velhinhos.</p>
+            <p>Todos os dias que estou contigo sou a pessoa mais feliz do mundo. Obrigado por fazeres a minha vida o mais feliz possível.</p>
+            <p>Espero que tenhas gostado desta prendinha. Mal posso esperar por uma vida inteira contigo .</p>
+        </div>
+    </div>
+
+    <script>
+        const START_DATE = new Date(2024, 4, 13); 
+        const QUIZ_DATA = [
+            { question: "Na primeira noite que nos conhecemos onde é que fomos buscar uma jola?", answer: "turcos" },
+            { question: "Quando eu fui a Lisboa a primeira vez qual amigo teu foi contigo buscar-me ao metro?", answer: "diogo" },
+            { question: "Onde foi o nosso primeiro date?", answer: "santiago" },
+            { question: "Que vinho bebemos na primeira vez que foste ao pico?", answer: "papa figos" },
+            { question: "O que é o pendente do primeiro colar que eu te dei?", answer: "lua" },
+            /*{ question: "a", answer:"a"}*/
+            
+        ];
+        const SLIDES_DATA = [
+            { url: "primeira.jpeg", caption: "Desde o inicio ❤️" },
+            { url: "olhar.jpeg", caption: "Sempre olhamos um para outro de forma diferente 👀" },
+            { url: "rir.jpeg", caption: "Sempre me fizeste rir imenso 😂" },
+            { url: "dormir.jpeg", caption: "E dormir super confortável agarradinho a ti 😴" },
+            { url: "flor.jpeg", caption: "És a minha florzinha 🌸" },
+            { url: "bk.jpeg", caption: "E a minha Burguer Queen 👑" },
+            { url: "random.jpeg", caption: "Adoro fazer tudo contigo ❤️" },
+            { url: "cozinha.jpeg", caption: "Desde os nossos cozinhados 👨‍🍳" },
+            { url: "visita.jpeg", caption: "Os nossos passeios 🚗" },
+            { url: "praia.jpeg", caption: "E até ir à praia 🏖" },
+            { url: "pc.jpeg", caption: "Amo-te imenso Às dos computadores 💻" },
+            { url: "cabelo.jpeg", caption: "Mesmo despenteada és uma gostosa 💆‍♀️" },
+            { url: "filhos.jpeg", caption: "E quero muito um dia casar e ter filhinhos contigo 👨‍👩‍👧‍👦" }
+        ];
+
+        const questionsList = document.getElementById('questions-list');
+        QUIZ_DATA.forEach((item, index) => {
+            questionsList.innerHTML += `<div style="text-align:left; margin-bottom:10px;"><label style="font-size:0.8rem; color:var(--dark-pink); font-weight:bold;">${item.question}</label><input type="text" class="quiz-ans" data-index="${index}" style="width:100%; padding:8px; border-radius:10px; border:1px solid #ddd; outline:none;"></div>`;
+        });
+        
+        const slidesWrapper = document.getElementById('slides-wrapper');
+        SLIDES_DATA.forEach((item, index) => {
+            slidesWrapper.innerHTML += `<img src="${item.url}" class="slide ${index === 0 ? 'active' : ''}">`;
+        });
+
+        let lastHeartTime = 0;
+        const heartFrequency = 100; // Increase this number (in ms) to make hearts appear LESS often
+
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            
+            // Only create a heart if enough time has passed
+            if (now - lastHeartTime > heartFrequency) {
+                const heart = document.createElement('div');
+                heart.innerHTML = '❤️';
+                heart.className = 'cursor-heart';
+                
+                // Randomize size slightly for the trail too
+                const size = Math.random() * 10 + 10;
+                heart.style.fontSize = size + 'px';
+                
+                heart.style.left = e.clientX + 'px';
+                heart.style.top = e.clientY + 'px';
+                
+                document.body.appendChild(heart);
+                
+                // Update the last heart timestamp
+                lastHeartTime = now;
+                
+                setTimeout(() => heart.remove(), 1200);
+            }
+        });
+
+        function checkQuiz() {
+            const inputs = document.querySelectorAll('.quiz-ans');
+            let allCorrect = [...inputs].every(input => input.value.trim().toLowerCase() === QUIZ_DATA[input.dataset.index].answer.toLowerCase());
+
+            if (allCorrect) {
+                document.getElementById('quiz-container').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('quiz-container').style.display = 'none';
+                    document.body.classList.add('valentine-theme');
+                    const ss = document.getElementById('slideshow-container');
+                    ss.style.display = 'block';
+                    setTimeout(() => ss.style.opacity = '1', 50);
+                    createHearts();
+                    updateSlideDisplay();
+                    startTimer();
+                }, 600);
+            } else {
+                document.getElementById('error-msg').style.display = 'block';
+            }
+        }
+
+        let currentSlide = 0;
+        function changeSlide(n) {
+            currentSlide += n;
+            updateSlideDisplay();
+        }
+
+        function updateSlideDisplay() {
+            const slides = document.querySelectorAll(".slide");
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            slides.forEach(s => s.classList.remove('active'));
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById("caption-text").innerText = SLIDES_DATA[currentSlide].caption;
+            document.getElementById('love-meter-fill').style.width = ((currentSlide + 1) / SLIDES_DATA.length) * 100 + '%';
+
+            if (currentSlide === 0) prevBtn.classList.add('hidden-nav');
+            else prevBtn.classList.remove('hidden-nav');
+
+            if (currentSlide === SLIDES_DATA.length - 1) {
+                nextBtn.classList.add('hidden-nav');
+                document.getElementById('letter-btn').style.display = 'block';
+            } else {
+                nextBtn.classList.remove('hidden-nav');
+            }
+        }
+
+        function transitionToLetter() {
+            const slideshow = document.getElementById('slideshow-container');
+            const letter = document.getElementById('letter-reveal');
+
+            slideshow.style.opacity = '0';
+            setTimeout(() => {
+                slideshow.style.display = 'none';
+                letter.style.display = 'block';
+                setTimeout(() => letter.style.opacity = '1', 50);
+            }, 600);
+        }
+
+        function startTimer() {
+            setInterval(() => {
+                const now = new Date();
+                let y = now.getFullYear() - START_DATE.getFullYear();
+                let m = now.getMonth() - START_DATE.getMonth();
+                let d = now.getDate() - START_DATE.getDate();
+                if (d < 0) { m--; d += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+                if (m < 0) { y--; m += 12; }
+                const diff = now - START_DATE;
+                const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const mn = Math.floor((diff / 1000 / 60) % 60);
+                const s = Math.floor((diff / 1000) % 60);
+                document.getElementById('time-display').innerText = `${y > 0 ? y + 'y ' : ''}${m > 0 ? m + 'm ' : ''}${d}d ${h}h ${mn}m ${s}s`;
+            }, 1000);
+        }
+        function createHearts() {
+            const symbols = ['❤️', '💖', '🐭', '❤️', '💖', '🥰', '🐵', '🐁'];
+            const container = document.getElementById('heart-container');
+
+            for (let i = 0; i < 30; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart-bg';
+                heart.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                
+                // Generate random values once
+                const scale = Math.random() * 1 + 0.5;
+                const xPos = Math.random() * 100 + 'vw';
+                const duration = (15 - (scale * 7)) + 's';
+                const delay = (Math.random() * 10) + 's';
+                const rotation = Math.floor(Math.random() * 40 - 20) + 'deg';
+
+                // Apply them as CSS variables
+                heart.style.setProperty('--x-pos', xPos);
+                heart.style.setProperty('--size', (20 * scale) + 'px');
+                heart.style.setProperty('--speed', duration);
+                heart.style.setProperty('--delay', delay);
+                heart.style.setProperty('--rotation', rotation);
+
+                container.appendChild(heart);
+            }
+        }
+    </script>
+</body>
+</html>
